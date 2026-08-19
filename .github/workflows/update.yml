@@ -79,7 +79,7 @@ jobs:
             https://github.com/${{ env.REPOSITORY }}/archive/refs/tags/${{ steps.tag.outputs.tag }}.tar.gz
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.x"
 
