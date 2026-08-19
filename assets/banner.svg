@@ -1,0 +1,63 @@
+<!--
+  Retargeting: this banner is a template asset — replace the two
+  <text> strings below ("PROJECT_NAME" and the tagline) with the real
+  project name and a one-line tagline once retargeted. Everything else
+  (gradients, grid, glow filter) is generic and doesn't need editing.
+-->
+<svg width="1200" height="280" viewBox="0 0 1200 280" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0A0E1A"/>
+      <stop offset="100%" stop-color="#0D1117"/>
+    </linearGradient>
+
+    <linearGradient id="titleGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#39D0D8"/>
+      <stop offset="50%" stop-color="#6E7BFF"/>
+      <stop offset="100%" stop-color="#B026FF"/>
+    </linearGradient>
+
+    <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#39D0D8" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#6E7BFF" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#B026FF" stop-opacity="0"/>
+    </linearGradient>
+
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1C2333" stroke-width="1"/>
+    </pattern>
+
+    <radialGradient id="fade" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#0D1117" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#0D1117" stop-opacity="1"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1200" height="280" fill="url(#bg)"/>
+  <rect width="1200" height="280" fill="url(#grid)"/>
+  <rect width="1200" height="280" fill="url(#fade)"/>
+
+  <text x="150" y="145" font-family="'Courier New', monospace" font-size="28"
+        fill="#6E7BFF" opacity="0.6">[</text>
+  <text x="1030" y="145" font-family="'Courier New', monospace" font-size="28"
+        fill="#B026FF" opacity="0.6">]</text>
+
+  <text x="600" y="155" text-anchor="middle"
+        font-family="'Segoe UI', Helvetica, Arial, sans-serif"
+        font-size="72" font-weight="700" letter-spacing="4"
+        fill="url(#titleGradient)" filter="url(#glow)">PROJECT_NAME</text>
+
+  <rect x="400" y="185" width="400" height="2" fill="url(#lineGradient)"/>
+
+  <text x="600" y="220" text-anchor="middle"
+        font-family="'Segoe UI', Helvetica, Arial, sans-serif"
+        font-size="18" letter-spacing="2" fill="#8B92A8">TAGLINE GOES HERE</text>
+</svg>

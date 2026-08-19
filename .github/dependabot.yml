@@ -1,0 +1,15 @@
+# ============================================================
+# .github/dependabot.yml
+# Keeps GitHub Actions versions (actions/checkout@v4, etc.) current.
+# No package-ecosystem entry for C++ deps themselves (nlohmann_json,
+# googletest, google-benchmark) — those are pinned via GIT_TAG/URL in
+# each CMakeLists.txt's FetchContent_Declare, not a manifest Dependabot
+# understands.
+# ============================================================
+
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

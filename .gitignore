@@ -1,0 +1,52 @@
+# CMake build directories
+build*/
+cmake-build-*/
+install*/
+results*/*.json
+results*/*.md
+
+# Conan-generated CMake presets (local paths, regenerated every build)
+CMakeUserPresets.json
+
+# Object files
+*.o
+*.obj
+
+# Executables
+*.exe
+
+# Debug symbols
+*.pdb
+
+# Static / shared libraries
+*.a
+*.lib
+*.so
+*.dll
+
+# Coverage files
+*.gcda
+*.gcno
+*.gcov
+coverage.info
+coverage.filtered.info
+coverage-html/
+
+# Doxygen (fetched theme + generated output, not committed)
+docs/doxygen-awesome-css/
+docs/html/
+
+# Clang tools
+.clangd/
+.cache/
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Release tarballs (downloaded locally for hash verification)
+*.tar.gz

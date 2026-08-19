@@ -1,0 +1,55 @@
+# ============================================================
+# .github/workflows/clang-tidy.yml
+# Runs clang-tidy static analysis against the library and test
+# suite on every push and pull request.
+# ============================================================
+
+name: Clang Tidy
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  clang-tidy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install clang-tidy
+        run: |
+          sudo apt update
+          sudo apt install -y clang-tidy ccache
+
+      - name: Cache ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ccache
+          key: ccache-clang-tidy-${{ github.sha }}
+          restore-keys: ccache-clang-tidy-
+
+      - name: Cache fetched dependencies
+        uses: actions/cache@v4
+        with:
+          path: build/_deps
+          key: deps-clang-tidy-${{ hashFiles('tests/google_tests/CMakeLists.txt') }}
+
+      # Benchmarks/regression tools aren't tidied here: regression/
+      # fetches nlohmann_json via FetchContent, and running clang-tidy
+      # against a third-party dependency's source produces warnings
+      # this repo has no way to fix.
+      - name: Configure
+        run: |
+          cmake -S . -B build \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_CXX_CLANG_TIDY=clang-tidy \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DBUILD_BENCHMARKS=OFF \
+            -DBUILD_REGRESSION=OFF \
+            -DBUILD_EXAMPLES=OFF
+
+      - name: Build
+        continue-on-error: true
+        run: cmake --build build
