@@ -25,7 +25,7 @@ jobs:
 
     env:
       PACKAGE_NAME: name
-      REPOSITORY: privateMwb/cpp-template
+      REPOSITORY: privateMwb/cpp2-template
       ROOT_DIR: .
       CONAN_RECIPE_DIR: packaging/recipes/name/all
       VCPKG_PORT_DIR: packaging/vcpkg/ports/name
