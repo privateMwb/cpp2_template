@@ -15,7 +15,7 @@ class Conan(ConanFile):
     cmake_name = "Name"  # matches project()'s name in the top-level CMakeLists.txt
     version = "1.0.0"
 
-    url = "https://github.com/privateMwb/cpp2-template"
+    url = "https://github.com/privateMwb/cpp2_template"
     description = "TODO: one-line description of what this library does."
     topics = (
         "TODO",
