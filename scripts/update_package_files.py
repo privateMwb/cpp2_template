@@ -133,27 +133,26 @@ text = portfile.read_text(encoding="utf-8")
 # strings (no literal "REF" keyword), and the per-submodule
 # vcpkg_from_github() call inside the foreach loop uses REF ${SUBMODULE_REF}
 # (a variable, not a hex literal), so neither is matched by this pattern.
-text, count = re.subn(
-    r"REF\s+[0-9a-fA-F]{7,40}",
+text, ref_count = re.subn(
+    r"REF\s+(?:<commit-sha>|[0-9a-fA-F]{7,40})",
     f"REF {commit}",
     text,
     count=1,
 )
 
-if count == 0:
-    sys.exit(
-        f"No commit-SHA REF found in {portfile} -- expected the "
-        "top-level vcpkg_from_github() block to already have a real "
-        "commit SHA (not the <commit-sha> placeholder) before this "
-        "script can find it to replace."
-    )
-
-text = re.sub(
-    r"SHA512\s+[0-9a-fA-F]+",
+text, sha_count = re.subn(
+    r"SHA512\s+(?:<sha512>|[0-9a-fA-F]+)",
     f"SHA512 {sha512}",
     text,
     count=1,
 )
+
+if ref_count == 0 or sha_count == 0:
+    sys.exit(
+        f"Could not find the top-level vcpkg_from_github() block's "
+        f"REF/SHA512 in {portfile} -- expected either the "
+        "<commit-sha>/<sha512> placeholders or a real hex value there."
+    )
 
 portfile.write_text(text, encoding="utf-8")
 
