@@ -23,7 +23,6 @@
 // startup, before any suite runs.
 inline void setProjectLabels() {
     setCustom("Custom");
-    setStandard("Reference");
 }
 
 // ── Suite drivers ───────────────────────────────────────────────────

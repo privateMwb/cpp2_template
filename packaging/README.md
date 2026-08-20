@@ -68,6 +68,20 @@ overrides below can be dropped entirely off-device.
 
 ## Verifying the vcpkg port
 
+**0. If working from a local checkout, initialize submodules first.**
+`libs/internal/` is populated via git submodules — skip this and the
+`SUBMODULE_INCLUDE_DIRS` glob in the root `CMakeLists.txt` silently
+finds nothing, producing a library missing half its headers instead
+of an error:
+
+```bash
+git submodule update --init --recursive
+```
+
+(Not needed against a release tarball — `vcpkg_from_github` in
+`portfile.cmake` fetches each submodule's pinned commit separately,
+since GitHub archive tarballs never include submodule content.)
+
 **1. Install to a staging prefix**, using the same disable flags
 `portfile.cmake` does. Against a release tarball, `cd` into it first
 (see the quirks note above on its folder name); against local source,
@@ -97,7 +111,12 @@ Expect `NameConfig.cmake`, `NameConfigVersion.cmake`,
 
 **3. Build a minimal consumer project**, in a separate directory so
 it can't accidentally pick up anything from the library's own build
-tree:
+tree. This is the manual, Termux-only substitute for what
+`packaging/vcpkg/smoke_test/` (`vcpkg.json` + `vcpkg-configuration.json`
++ `CMakeLists.txt`) already automates via a real `vcpkg install` — on
+real CI, use that harness instead of typing this out by hand; the
+steps below exist only because real `vcpkg` can't run on Termux at
+all (see the quirks note above):
 
 ```bash
 mkdir -p ~/staging-consumer && cd ~/staging-consumer

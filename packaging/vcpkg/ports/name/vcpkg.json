@@ -2,7 +2,7 @@
   "name": "name",
   "version": "1.0.0",
   "description": "TODO: one-line description of what this library does.",
-  "homepage": "https://github.com/privateMwb/cpp-template",
+  "homepage": "https://github.com/privateMwb/cpp2-template",
   "license": "MIT",
   "dependencies": [
     "vcpkg-cmake",

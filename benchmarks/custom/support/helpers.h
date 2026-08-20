@@ -34,7 +34,6 @@ inline constexpr std::size_t LARGE  = 1'000'000;
 // the suite currently running. Set via setCustom()/setStandard()/
 // setSuite() before benchmarks run, then read by the print* functions.
 inline std::string custom;
-inline std::string standard;
 inline std::string suiteName;
 
 // Accumulates a markdown-formatted transcript of the run, built up by
@@ -49,9 +48,6 @@ inline std::string& markdown_buffer() {
 // Sets the display label shown for each side of a comparison row.
 inline void setCustom(std::string name) {
     custom = name;
-}
-inline void setStandard(std::string name) {
-    standard = name;
 }
 
 // Sets the current benchmark suite name (shown in table headers, and
@@ -146,17 +142,16 @@ inline void borderLine() {
     std::cout << GRAY << std::string(90, '-') << RESET << "\n";
 }
 
-// Prints a 3-column table header for benchmarks with no reference
-// implementation to compare against (nothing to diff, so no
-// Baseline/Δ columns).
-inline void setSoloHeader(std::string_view header) {
+
+// Prints the benchmark table header.
+inline void setHeader(std::string_view header) {
     borderLine();
 
     // clang-format off
     std::cout << std::left << CYAN 
               << std::setw(30) << prettify(header) 
               << std::setw(15) << "Iteration" 
-              << std::setw(15) << custom 
+              << std::setw(15) << custom
               << RESET << "\n";
     // clang-format on
 
@@ -167,77 +162,22 @@ inline void setSoloHeader(std::string_view header) {
     markdown_buffer() += "|---|---|---|\n";
 }
 
-// Prints one solo row: name, iteration tier, single duration. No delta,
-// no color — there's nothing to compare against.
-inline void printSoloRow(std::string_view name, std::string_view iteration, nanoseconds ns) {
-    // clang-format off
-    std::cout << std::left 
-              << std::setw(30) << prettify(name) 
-              << std::setw(15) << iteration
-              << std::setw(15) << formatDuration(ns) 
-              << std::setw(20) << "     —" 
-              << std::setw(15) << "    —" 
-              << "\n";
-
-    markdown_buffer() += "| " + prettify(name) 
-                      + " | " + std::string(iteration) 
-                      + " | " + formatDuration(ns) 
-                      + " |\n";
-    // clang-format on
-}
-
-// Prints the benchmark table header.
-inline void setHeader(std::string_view header) {
-    borderLine();
-
-    // clang-format off
-    std::cout << std::left << CYAN 
-              << std::setw(30) << prettify(header) 
-              << std::setw(15) << "Iteration" 
-              << std::setw(15) << custom 
-              << std::setw(20) << standard
-              << std::setw(15) << "  Δ" 
-              << RESET << "\n";
-    // clang-format on
-
-    borderLine();
-
-    markdown_buffer() += "\n## " + prettify(header) + "\n\n";
-    markdown_buffer() += "| Test | Iteration | " + custom + " | " + standard + " | Δ |\n";
-    markdown_buffer() += "|---|---|---|---|---|\n";
-}
-
 // Prints one merged comparison row: name, iteration tier, both durations,
 // and the % delta (custom vs reference implementation) colorized — red if
 // the custom implementation is meaningfully slower, green if meaningfully
 // faster, gray at exactly 0% (treated as no measurable difference).
 inline void printComparisonRow(std::string_view name, std::string_view iteration,
-                               nanoseconds customNs, nanoseconds stdNs) {
-    const double pct =
-        stdNs.count() == 0
-            ? 0.0
-            : (static_cast<double>(stdNs.count()) - static_cast<double>(customNs.count())) /
-                  static_cast<double>(customNs.count()) * 100.0;
-
-    const char* deltaColor = (pct > 0.0) ? GREEN : (pct < 0.0) ? RED : GRAY;
-
-    std::ostringstream deltaStream;
-    deltaStream << std::showpos << std::fixed << std::setprecision(1) << pct << "%";
-
+                               nanoseconds customNs) {
     // clang-format off
     std::cout << std::left 
               << std::setw(30) << prettify(name) 
               << std::setw(15) << iteration
               << std::setw(15) << formatDuration(customNs) 
-              << std::setw(20) << formatDuration(stdNs)
-              << deltaColor << deltaStream.str() 
               << RESET << "\n";
 
     markdown_buffer() += "| " + prettify(name) 
                       + " | " + std::string(iteration) 
                       + " | " + formatDuration(customNs) 
-                      + " | " + formatDuration(stdNs) 
-                      + " | " + deltaStream.str() 
                       + " |\n";
     // clang-format on
 }

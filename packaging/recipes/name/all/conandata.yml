@@ -1,4 +1,4 @@
 sources:
   "1.0.0":
-    url: "https://github.com/privateMwb/cpp-template/archive/refs/tags/v1.0.0.tar.gz"
-    sha256: "aa7e29c18ee4ab8840b959298cd8f03b3f86d85ca6d49bb808fafff840d0ebf9"
+    url: "https://github.com/privateMwb/cpp2-template.git"
+    commit: "a903e0bf7f9dde22734ee9511f1e216bd6120233"

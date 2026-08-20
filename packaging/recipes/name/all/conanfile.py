@@ -1,7 +1,8 @@
 from conan import ConanFile
 from conan.tools.build import check_min_cppstd
 from conan.tools.cmake import CMake, CMakeDeps, CMakeToolchain, cmake_layout
-from conan.tools.files import copy, get
+from conan.tools.files import copy
+from conan.tools.scm import Git
 import os
 
 
@@ -14,7 +15,7 @@ class Conan(ConanFile):
     cmake_name = "Name"  # matches project()'s name in the top-level CMakeLists.txt
     version = "1.0.0"
 
-    url = "https://github.com/privateMwb/cpp-template"
+    url = "https://github.com/privateMwb/cpp2-template"
     description = "TODO: one-line description of what this library does."
     topics = (
         "TODO",
@@ -71,11 +72,14 @@ class Conan(ConanFile):
         check_min_cppstd(self, 23)
 
     def source(self):
-        get(
-            self,
-            **self.conan_data["sources"][self.version],
-            strip_root=True,
-        )
+        sources = self.conan_data["sources"][self.version]
+        git = Git(self)
+        git.run("init .")
+        git.run(f"remote add origin {sources['url']}")
+        git.run(f"fetch --depth 1 origin {sources['commit']}")
+        git.run("checkout FETCH_HEAD")
+        git.run("submodule sync --recursive")
+        git.run("submodule update --init --recursive")
 
     def generate(self):
         deps = CMakeDeps(self)

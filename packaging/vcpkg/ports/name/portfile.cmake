@@ -1,16 +1,53 @@
+# ── Retargeting this port for a new library ─────────────────────
+# CMAKE_PROJECT_NAME must match project()'s name in the repo's root
+# CMakeLists.txt exactly, casing included (e.g. "FalconHTTP") -- NOT
+# ${PORT}, which vcpkg forces to lowercase-with-hyphens (e.g.
+# "falconhttp") and is a different string. GITHUB_REPO_NAME must match
+# the real GitHub repo name, casing included -- also not necessarily
+# the same as ${PORT}.
+set(CMAKE_PROJECT_NAME Name)
+set(GITHUB_REPO_NAME cpp2_template)
+# ──────────────────────────────────────────────────────────────
+
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
-    REPO privateMwb/cpp-template
-    REF v1.0.0
-    SHA512 b9fd50669b85bf7dad1363235da6baef22aecef639be8ce222d0aa56abf59ccdae3e55d581c89c23c5286b904923dfac4dd76864e3e213cf7f2938edbc0841d4  # TODO: replace with the real SHA512 of the release tarball above
+    REPO privateMwb/${GITHUB_REPO_NAME}
+    REF <commit-sha>
+    SHA512 <sha512>
 )
 
-set(VCPKG_PORT_NAME Name)
+# GitHub archive tarballs never include submodule content, so this
+# project's internal libraries under libs/internal/ are fetched
+# separately here, each pinned to the exact commit the submodule
+# points at, then copied into place.
+#
+# Table of name|ref|sha512 -- add a submodule by adding one line here,
+# not by copy-pasting a whole vcpkg_from_github() block. The line
+# below is a placeholder example; replace with your actual submodules.
+set(SUBMODULE_SPECS
+    "SubmoduleName|<commit-sha>|<sha512>"
+)
+
+foreach(SPEC ${SUBMODULE_SPECS})
+    string(REPLACE "|" ";" SPEC_PARTS "${SPEC}")
+    list(GET SPEC_PARTS 0 SUBMODULE_NAME)
+    list(GET SPEC_PARTS 1 SUBMODULE_REF)
+    list(GET SPEC_PARTS 2 SUBMODULE_SHA512)
+
+    file(REMOVE_RECURSE "${SOURCE_PATH}/libs/internal/${SUBMODULE_NAME}")
+
+    vcpkg_from_github(
+        OUT_SOURCE_PATH SUBMODULE_SOURCE_PATH
+        REPO privateMwb/${SUBMODULE_NAME}
+        REF ${SUBMODULE_REF}
+        SHA512 ${SUBMODULE_SHA512}
+    )
+
+    file(RENAME "${SUBMODULE_SOURCE_PATH}" "${SOURCE_PATH}/libs/internal/${SUBMODULE_NAME}")
+endforeach()
 
 # Consumers only need the library itself, not the tests, benchmarks,
-# regression tools, or examples. regression/ also fetches a third-party
-# dependency via FetchContent at configure time, which requires network
-# access that vcpkg's build sandbox does not allow.
+# regression tools, or examples.
 vcpkg_cmake_configure(
     SOURCE_PATH "${SOURCE_PATH}"
     OPTIONS
@@ -22,20 +59,23 @@ vcpkg_cmake_configure(
 
 vcpkg_cmake_install()
 
+# PACKAGE_NAME/CONFIG_PATH must match CMAKE_PROJECT_NAME above, not
+# ${PORT}: this points at wherever the library's own root
+# CMakeLists.txt called install(EXPORT ... DESTINATION
+# lib/cmake/${PROJECT_NAME}), and that PROJECT_NAME keeps whatever
+# casing project() used -- vcpkg's forced-lowercase ${PORT} will not
+# match it on a case-sensitive filesystem.
 vcpkg_cmake_config_fixup(
-    PACKAGE_NAME ${VCPKG_PORT_NAME}
-    CONFIG_PATH lib/cmake/${VCPKG_PORT_NAME}
+    PACKAGE_NAME ${CMAKE_PROJECT_NAME}
+    CONFIG_PATH lib/cmake/${CMAKE_PROJECT_NAME}
 )
 
-# Header-only: there's nothing in debug/ worth keeping — no compiled
-# binaries, just a duplicate copy of the same headers. Remove it
-# entirely rather than just debug/include.
-# NOTE: if this library ever grows compiled sources, switch this back
-# to removing only debug/include and keep the real debug binaries,
-# mirroring conanfile.py's own header-library/library toggle.
+# This library is compiled (not header-only), so debug binaries are
+# real and must be kept -- only the duplicate debug/include headers
+# are removed.
 file(
     REMOVE_RECURSE
-    "${CURRENT_PACKAGES_DIR}/debug"
+    "${CURRENT_PACKAGES_DIR}/debug/include"
 )
 
 vcpkg_install_copyright(

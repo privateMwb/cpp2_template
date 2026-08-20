@@ -12,6 +12,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--package", required=True)
 parser.add_argument("--repo", required=True)
 parser.add_argument("--version", required=True)
+parser.add_argument("--commit", required=True)
 parser.add_argument("--archive", required=True)
 parser.add_argument("--root-dir", required=True)
 parser.add_argument("--conan-dir", required=True)
@@ -22,6 +23,7 @@ args = parser.parse_args()
 package = args.package
 repo = args.repo
 version = args.version
+commit = args.commit
 
 archive = pathlib.Path(args.archive)
 
@@ -30,11 +32,12 @@ if not archive.exists():
 
 data = archive.read_bytes()
 
-sha256 = hashlib.sha256(data).hexdigest()
+# Only vcpkg needs a hash (git itself is the integrity check for the
+# Conan git-clone flow; conandata.yml pins a commit, not a tarball).
 sha512 = hashlib.sha512(data).hexdigest()
 
 print(f"Version : {version}")
-print(f"SHA256  : {sha256}")
+print(f"Commit  : {commit}")
 print(f"SHA512  : {sha512}")
 
 # ---------------------------------------------------------------------
@@ -99,11 +102,14 @@ print("✓ Updated conanfile.py")
 
 conandata = recipe_dir / "conandata.yml"
 
+# Matches the git-clone flow in conanfile.py's source() (Git(self).run(...)
+# against sources['url'] / sources['commit']) -- not a tarball download, so
+# no hash is stored here. The commit is the integrity check.
 conandata.write_text(
 f'''sources:
   "{version}":
-    url: "https://github.com/{repo}/archive/refs/tags/v{version}.tar.gz"
-    sha256: "{sha256}"
+    url: "https://github.com/{repo}.git"
+    commit: "{commit}"
 ''',
 encoding="utf-8"
 )
@@ -122,16 +128,31 @@ portfile = port_dir / "portfile.cmake"
 
 text = portfile.read_text(encoding="utf-8")
 
-text = re.sub(
-    r"REF\s+v[0-9A-Za-z.\-_]+",
-    f"REF v{version}",
+# Only touches the first REF -- the top-level vcpkg_from_github() block
+# for the library itself. SUBMODULE_SPECS entries are plain "name|ref|sha"
+# strings (no literal "REF" keyword), and the per-submodule
+# vcpkg_from_github() call inside the foreach loop uses REF ${SUBMODULE_REF}
+# (a variable, not a hex literal), so neither is matched by this pattern.
+text, count = re.subn(
+    r"REF\s+[0-9a-fA-F]{7,40}",
+    f"REF {commit}",
     text,
+    count=1,
 )
+
+if count == 0:
+    sys.exit(
+        f"No commit-SHA REF found in {portfile} -- expected the "
+        "top-level vcpkg_from_github() block to already have a real "
+        "commit SHA (not the <commit-sha> placeholder) before this "
+        "script can find it to replace."
+    )
 
 text = re.sub(
     r"SHA512\s+[0-9a-fA-F]+",
     f"SHA512 {sha512}",
     text,
+    count=1,
 )
 
 portfile.write_text(text, encoding="utf-8")
