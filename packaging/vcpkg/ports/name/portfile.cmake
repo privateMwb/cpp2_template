@@ -37,7 +37,7 @@ vcpkg_from_github(
 # not by copy-pasting a whole vcpkg_from_github() block. The line
 # below is a placeholder example; replace with your actual submodules.
 set(SUBMODULE_SPECS
-    "SubmoduleName|<commit-sha>|<sha512>"
+    # "SubmoduleName|<commit-sha>|<sha512>"
 )
 
 foreach(SPEC ${SUBMODULE_SPECS})
