@@ -12,8 +12,8 @@ set(GITHUB_REPO_NAME cpp2_template)
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO privateMwb/${GITHUB_REPO_NAME}
-    REF <commit-sha>
-    SHA512 <sha512>
+    REF c431d3183c5fb589102a30d4fd5b0591dd48256f
+    SHA512 935b3d516e996f6d25948ba8a54c1b7f70f7f0e3f517e36481fdf0196c2c5cfc2841f86e891f3df9517746b7fb605db47cdded1b8ff78d9482ddaa621db43a34
 )
 
 # GitHub archive tarballs never include submodule content, so this
