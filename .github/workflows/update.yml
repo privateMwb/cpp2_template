@@ -25,7 +25,7 @@ jobs:
 
     env:
       PACKAGE_NAME: name
-      REPOSITORY: privateMwb/cpp2-template
+      REPOSITORY: privateMwb/cpp-template
       ROOT_DIR: .
       CONAN_RECIPE_DIR: packaging/recipes/name/all
       VCPKG_PORT_DIR: packaging/vcpkg/ports/name
@@ -71,12 +71,21 @@ jobs:
           echo "Candidates: $(echo "$CANDIDATES" | tr '\n' ' ')"
           echo "Source branch: $BRANCH"
           echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
 
       - name: Download source archive
         run: |
+          # Fetch by resolved commit SHA, not the tag string. portfile.cmake
+          # pins REF to a raw commit SHA, and vcpkg_from_github downloads
+          # archive/<REF>.tar.gz -- GitHub embeds the ref string into the
+          # tarball's top-level folder name, so a tag-based archive
+          # (archive/refs/tags/vX.tar.gz) has different bytes, and a
+          # different hash, than the commit-based archive vcpkg actually
+          # fetches. Downloading the same URL here keeps the SHA512 we
+          # compute valid.
           curl -L \
             -o source.tar.gz \
-            https://github.com/${{ env.REPOSITORY }}/archive/refs/tags/${{ steps.tag.outputs.tag }}.tar.gz
+            https://github.com/${{ env.REPOSITORY }}/archive/${{ steps.branch.outputs.sha }}.tar.gz
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -89,6 +98,7 @@ jobs:
             --package ${{ env.PACKAGE_NAME }} \
             --repo ${{ env.REPOSITORY }} \
             --version ${{ steps.tag.outputs.version }} \
+            --commit ${{ steps.branch.outputs.sha }} \
             --archive source.tar.gz \
             --root-dir "$ROOT_DIR" \
             --conan-dir "$CONAN_RECIPE_DIR" \

@@ -74,6 +74,7 @@
 
 - [Features](#features)
 - [Requirements](#requirements)
+- [Dependencies](#dependencies)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [Project Structure](#project-structure)
@@ -105,6 +106,25 @@
 
 - A C++23-conformant compiler (tested: Clang, GCC, MSVC)
 - CMake 3.20+
+
+<div align="right"><a href="#-table-of-contents"><img src="assets/back-to-top.svg" alt="Back to top" height="28"></a></div>
+
+## <a id="dependencies"></a>🔗 Dependencies
+
+<!-- List only this project's OWN internal libraries that the library
+     code itself actually uses (not test/benchmark-only deps), one row
+     per submodule under libs/internal/. Order by how central each one
+     is, not alphabetically. Name the specific type and the specific
+     place it's used -- "backing Router::routes" tells a reader
+     something; "used internally" doesn't. Cut anything vendored but
+     currently unused. -->
+
+<ProjectName> is built entirely on this author's own libraries, vendored as git submodules under `libs/internal/`:
+
+| Library | Provides | Repository |
+|---|---|---|
+| `<LibraryName>` | `<Type<T>>`, <what it backs and where — e.g. "Router::routes and the middleware list"> | `<owner>/<repo>` |
+| `<LibraryName>` | `<Type<T>>`, <same pattern> | `<owner>/<repo>` |
 
 <div align="right"><a href="#-table-of-contents"><img src="assets/back-to-top.svg" alt="Back to top" height="28"></a></div>
 
@@ -169,6 +189,10 @@ int main() {
 ├── src/                              # only present once the library has
 │   └── <ProjectName>/                # compiled sources — header-only by default
 │       └── ...
+│
+├── libs/
+│   └── internal/                     # this project's own libraries, vendored
+│       └── <LibraryName>/            # as git submodules (see Dependencies)
 │
 ├── examples/
 │   ├── CMakeLists.txt
