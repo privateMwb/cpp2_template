@@ -28,7 +28,7 @@ class Conan(ConanFile):
     # NOTE: if this library ever grows compiled sources, this recipe needs
     # to switch back to "library" and package_id()/cpp_info.libs need to
     # become conditional again, mirroring CMakeLists.txt's own auto-detect.
-    package_type = "header-library"
+    package_type = "library"
 
     license = "MIT"
     author = "privateMwb"
