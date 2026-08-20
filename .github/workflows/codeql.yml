@@ -1,0 +1,62 @@
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Catches new CodeQL query packs/advisories even on weeks with no
+    # pushes -- Mondays 06:00 UTC.
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  analyze:
+    name: Analyze (C++)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # libs/internal/ is populated via git submodules -- without
+          # this, CodeQL only ever sees the root repo's own sources
+          # and silently misses everything under libs/internal/.
+          submodules: recursive
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: cpp
+          # security-extended pulls in additional query packs beyond
+          # the default security-and-quality set (more coverage, more
+          # runtime) -- drop this line to fall back to CodeQL's
+          # built-in default suite if runs get too slow.
+          queries: security-extended
+
+      - name: Configure and build
+        # All four BUILD_* flags set explicitly per this repo's
+        # convention (avoids CMake cache persistence surprises).
+        # Examples/tests/benchmarks/regression are turned ON here
+        # (unlike the packaging builds, which turn them OFF) so
+        # CodeQL actually traces and analyzes that code too, not just
+        # the library itself.
+        run: |
+          cmake -B build -S . \
+            -DBUILD_TESTS=ON \
+            -DBUILD_EXAMPLES=ON \
+            -DBUILD_BENCHMARKS=ON \
+            -DBUILD_REGRESSION=ON
+          cmake --build build --parallel
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:cpp"
+
