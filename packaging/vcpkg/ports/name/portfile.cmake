@@ -9,11 +9,23 @@ set(CMAKE_PROJECT_NAME Name)
 set(GITHUB_REPO_NAME cpp2_template)
 # ──────────────────────────────────────────────────────────────
 
+# Reads GITHUB_TOKEN from the environment if present (set by
+# packaging.yml's vcpkg job) so these repos, which are private, can be
+# fetched -- vcpkg_from_github's own HTTPS downloader has no other way
+# to authenticate. Empty string is fine for public consumers/local
+# testing: vcpkg treats an empty AUTHORIZATION_TOKEN as "no auth."
+if(DEFINED ENV{GITHUB_TOKEN})
+    set(GITHUB_AUTH_TOKEN "$ENV{GITHUB_TOKEN}")
+else()
+    set(GITHUB_AUTH_TOKEN "")
+endif()
+
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO privateMwb/${GITHUB_REPO_NAME}
-    REF c431d3183c5fb589102a30d4fd5b0591dd48256f
-    SHA512 935b3d516e996f6d25948ba8a54c1b7f70f7f0e3f517e36481fdf0196c2c5cfc2841f86e891f3df9517746b7fb605db47cdded1b8ff78d9482ddaa621db43a34
+    REF <commit-sha>
+    SHA512 <sha512>
+    AUTHORIZATION_TOKEN ${GITHUB_AUTH_TOKEN}
 )
 
 # GitHub archive tarballs never include submodule content, so this
@@ -41,6 +53,7 @@ foreach(SPEC ${SUBMODULE_SPECS})
         REPO privateMwb/${SUBMODULE_NAME}
         REF ${SUBMODULE_REF}
         SHA512 ${SUBMODULE_SHA512}
+        AUTHORIZATION_TOKEN ${GITHUB_AUTH_TOKEN}
     )
 
     file(RENAME "${SUBMODULE_SOURCE_PATH}" "${SOURCE_PATH}/libs/internal/${SUBMODULE_NAME}")

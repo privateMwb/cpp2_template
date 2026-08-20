@@ -26,6 +26,9 @@ on:
       - "conandata.yml"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   # ------------------------------------------------------------
   # conan create builds the package, then automatically builds and
@@ -48,6 +51,15 @@ jobs:
 
       - name: Detect default profile
         run: conan profile detect --force
+
+      - name: Configure git credentials for private source fetches
+        # conanfile.py's source() does a raw `git fetch` against this
+        # (private) repo -- anonymous HTTPS git can't authenticate,
+        # so rewrite github.com HTTPS URLs to carry GITHUB_TOKEN.
+        # GITHUB_TOKEN is auto-provided by Actions with read access
+        # to this repo already; no extra secret needed.
+        run: |
+          git config --global url."https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/".insteadOf "https://github.com/"
 
       - name: Resolve package version
         id: version
@@ -82,6 +94,13 @@ jobs:
 
       - name: Configure and build the smoke test
         working-directory: packaging/vcpkg-smoke-test
+        # GITHUB_TOKEN lets portfile.cmake's vcpkg_from_github() calls
+        # authenticate against this private repo (see portfile.cmake's
+        # AUTHORIZATION_TOKEN wiring) -- vcpkg's downloader is separate
+        # from git, so the Conan job's git-credential trick doesn't
+        # apply here.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=/tmp/vcpkg/scripts/buildsystems/vcpkg.cmake
           cmake --build build
