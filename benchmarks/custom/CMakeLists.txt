@@ -25,7 +25,6 @@ target_include_directories(
     benchmarks
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
-        ${CMAKE_CURRENT_SOURCE_DIR}/../shared
         ${CMAKE_SOURCE_DIR}/include
 )
 

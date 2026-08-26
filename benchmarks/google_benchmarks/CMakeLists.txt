@@ -34,7 +34,6 @@ add_executable(
 target_include_directories(
     google_benchmarks
     PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/../shared
         ${CMAKE_SOURCE_DIR}/include
 )
 

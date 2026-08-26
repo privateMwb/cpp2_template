@@ -12,7 +12,6 @@
 #include "helpers.h"                 // output formatting & printing helpers
 #include "macros.h"                  // BENCH/BENCH_SOLO/BENCH_CUSTOM, REGISTER_BENCH_SUITE()
 #include "registry.h"                // BenchSuite, BenchRegistrar, bench_registry()
-#include "reference.h"               // baseline/reference implementation for BENCH() comparisons
 // clang-format on
 
 // ── Project configuration ───────────────────────────────────────────
