@@ -143,7 +143,7 @@ jobs:
       # --------------------------------------------------------
       - name: Upload HTML report
         if: steps.coverage.outputs.has_coverage == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-html
           path: coverage-html
