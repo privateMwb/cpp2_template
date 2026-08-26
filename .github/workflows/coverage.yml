@@ -30,7 +30,8 @@ jobs:
         with:
           path: ~/.cache/ccache
           key: ccache-coverage-${{ github.sha }}
-          restore-keys: ccache-coverage-
+          restore-keys: |
+            ccache-coverage-
 
       - name: Cache fetched dependencies
         uses: actions/cache@v4
@@ -38,10 +39,9 @@ jobs:
           path: build/_deps
           key: deps-coverage-${{ hashFiles('tests/google_tests/CMakeLists.txt') }}
 
-      # Benchmarks/regression tools/examples are skipped: instrumenting
-      # a fetched third-party dependency (regression/ pulls in
-      # nlohmann_json) with --coverage adds irrelevant, unowned
-      # coverage noise and slows the build for no benefit.
+      # Benchmarks, regression tools, and examples are skipped.
+      # The template may not contain any real library implementation
+      # yet, so coverage is allowed to produce an empty source report.
       - name: Configure
         run: |
           cmake -S . -B build \
@@ -53,10 +53,9 @@ jobs:
             -DBUILD_EXAMPLES=OFF
 
       - name: Build
-        run: cmake --build build
+        run: cmake --build build --parallel
 
       - name: Run tests
-        continue-on-error: true
         run: ctest --test-dir build --output-on-failure
 
       - name: Generate coverage report
@@ -69,14 +68,27 @@ jobs:
           lcov --extract coverage.info \
             '*/include/ProjName/*' \
             '*/src/ProjName/*' \
-            --output-file coverage.filtered.info
+            --output-file coverage.filtered.info \
+            --ignore-errors empty
+
+      - name: Check coverage data
+        id: coverage
+        run: |
+          if grep -q "^SF:" coverage.filtered.info; then
+            echo "has_coverage=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_coverage=false" >> "$GITHUB_OUTPUT"
+            echo "No project source coverage found."
+          fi
 
       - name: Generate HTML report
+        if: steps.coverage.outputs.has_coverage == 'true'
         run: |
           genhtml coverage.filtered.info \
             --output-directory coverage-html
 
       - name: Upload HTML report
+        if: steps.coverage.outputs.has_coverage == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-html
