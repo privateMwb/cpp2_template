@@ -1,18 +1,17 @@
 from conan import ConanFile
 from conan.tools.build import check_min_cppstd
 from conan.tools.cmake import CMake, CMakeDeps, CMakeToolchain, cmake_layout
-from conan.tools.files import copy
+from conan.tools.files import collect_libs, copy
 from conan.tools.scm import Git
 import os
 
-
 class Conan(ConanFile):
     # ── Retargeting this recipe for a new library ───────────────────
-    # Edit these fields (and the class name above) — everything below
-    # derives from them. Version is handled by a separate script, not
-    # edited here.
-    name = "name"
-    cmake_name = "Name"  # matches project()'s name in the top-level CMakeLists.txt
+    # Edit these fields (and the module-level dnspro above) — everything
+    # below derives from them. Version is handled by a separate script,
+    # not edited here.
+    name = "projname"
+    cmake_name = "ProjName"  # matches project()'s dnspro in the top-level CMakeLists.txt
     version = "1.0.0"
 
     url = "https://github.com/privateMwb/cpp2_template"
@@ -23,11 +22,10 @@ class Conan(ConanFile):
     )
     # ──────────────────────────────────────────────────────────────
 
-    # header-library, not "library": there's no compiled src/<name>/*.cpp
-    # today, so CMakeLists.txt's auto-detect builds an INTERFACE target.
-    # NOTE: if this library ever grows compiled sources, this recipe needs
-    # to switch back to "library" and package_id()/cpp_info.libs need to
-    # become conditional again, mirroring CMakeLists.txt's own auto-detect.
+    # Compiled library: Parser.cpp/Builder.cpp/ZoneStore.cpp/Resolver.cpp
+    # under src/ produce real object code, so this is a static or shared
+    # library depending on the "shared" option below, not an INTERFACE
+    # target -- package_id() and cpp_info.libs must account for that.
     package_type = "library"
 
     license = "MIT"
@@ -62,11 +60,6 @@ class Conan(ConanFile):
 
     def layout(self):
         cmake_layout(self)
-
-    def package_id(self):
-        # Header-only: no compiled ABI, so one package serves every
-        # compiler/arch/build_type combination.
-        self.info.clear()
 
     def validate(self):
         check_min_cppstd(self, 23)
@@ -114,5 +107,4 @@ class Conan(ConanFile):
     def package_info(self):
         self.cpp_info.set_property("cmake_file_name", self.cmake_name)
         self.cpp_info.set_property("cmake_target_name", f"{self.cmake_name}::{self.cmake_name}")
-        self.cpp_info.bindirs = []
-        self.cpp_info.libdirs = []
+        self.cpp_info.libs = collect_libs(self)

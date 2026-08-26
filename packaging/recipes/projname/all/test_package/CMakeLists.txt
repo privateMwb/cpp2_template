@@ -4,7 +4,7 @@ project(test_package CXX)
 # Retargeting: the one name to update per project — must match
 # cmake_name in ../conanfile.py, and the name passed to project() in
 # the repo's root CMakeLists.txt.
-set(TESTED_PACKAGE_NAME Name)
+set(TESTED_PACKAGE_NAME ProjName)
 
 find_package(${TESTED_PACKAGE_NAME} REQUIRED CONFIG)
 

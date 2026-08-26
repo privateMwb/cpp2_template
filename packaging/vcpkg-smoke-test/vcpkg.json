@@ -2,6 +2,6 @@
   "name": "vcpkg-smoke-test",
   "version": "1.0.0",
   "dependencies": [
-    "name"
+    "projname"
   ]
 }
