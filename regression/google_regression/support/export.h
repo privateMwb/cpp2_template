@@ -9,9 +9,11 @@
 #include <string>      // std::string (filename params)
 // clang-format on
 
-constexpr const char* kResultsDir = "benchmarks/results/";
+constexpr const char* kResultsDir = "regression/results/";
 
 // Writes regression_results() out as a JSON array to <kResultsDir>/filename.
+// One entry per RegressionRow -- flat by benchmark name, since Google
+// Benchmark's own snapshots carry no suite/operation split to preserve.
 inline void exportJson(const std::string& filename) {
     std::ofstream out(kResultsDir + filename);
 
@@ -26,9 +28,7 @@ inline void exportJson(const std::string& filename) {
         const auto& r = results[i];
 
         out << "  {\n";
-        out << "    \"suite\": \"" << r.suite << "\",\n";
-        out << "    \"operation\": \"" << r.operation << "\",\n";
-        out << "    \"iteration\": " << r.iteration << ", \n";
+        out << "    \"name\": \"" << r.name << "\",\n";
         out << "    \"baseline_ns\": " << std::fixed << std::setprecision(2) << r.baseline_ns
             << ",\n";
         out << "    \"current_ns\": " << std::fixed << std::setprecision(2) << r.current_ns

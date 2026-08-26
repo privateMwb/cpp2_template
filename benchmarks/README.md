@@ -30,7 +30,7 @@ This produces two executables under `build_benchmarks/`: `benchmarks`
 See `custom/README.md` and `google_benchmarks/README.md` for each
 suite's CLI — they don't share one, since Google Benchmark has its own
 flag-based interface (`--benchmark_filter`, `--benchmark_out`, etc.)
-rather than the custom framework's `list`/category/id/name dispatch.
+rather than the custom framework's `list`/category/id/dnspro dispatch.
 
 Once you have results, `../regression/` compares a run against a saved
 baseline — see `../regression/README.md`.

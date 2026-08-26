@@ -24,7 +24,7 @@ file(GLOB_RECURSE BENCH_SOURCES CONFIGURE_DEPENDS
 
 # Build the benchmark executable.
 add_executable(
-    benchmarks_google
+    google_benchmarks
     bench_main.cpp
     ${BENCH_SOURCES}
 )
@@ -32,7 +32,7 @@ add_executable(
 # Allow includes from the shared reference baseline and the library's
 # public headers.
 target_include_directories(
-    benchmarks_google
+    google_benchmarks
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/../shared
         ${CMAKE_SOURCE_DIR}/include
@@ -40,11 +40,11 @@ target_include_directories(
 
 # Link the library under test and Google Benchmark into the executable.
 target_link_libraries(
-    benchmarks_google
+    google_benchmarks
     PRIVATE
         ${PROJECT_NAME}
         benchmark::benchmark
 )
 
 # Require C++17.
-target_compile_features(benchmarks_google PRIVATE cxx_std_17)
+target_compile_features(google_benchmarks PRIVATE cxx_std_17)

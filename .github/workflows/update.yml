@@ -24,11 +24,11 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      PACKAGE_NAME: name
-      REPOSITORY: privateMwb/cpp2_template
+      PACKAGE_NAME: projname
+      DNS_REPOSITORY: privateMwb/cpp2_template
       ROOT_DIR: .
-      CONAN_RECIPE_DIR: packaging/recipes/name/all
-      VCPKG_PORT_DIR: packaging/vcpkg/ports/name
+      CONAN_RECIPE_DIR: packaging/recipes/projname/all
+      VCPKG_PORT_DIR: packaging/vcpkg/ports/projname
 
     steps:
       - name: Resolve tag
@@ -85,7 +85,47 @@ jobs:
           # compute valid.
           curl -L \
             -o source.tar.gz \
-            https://github.com/${{ env.REPOSITORY }}/archive/${{ steps.branch.outputs.sha }}.tar.gz
+            https://github.com/${{ env.DNS_REPOSITORY }}/archive/${{ steps.branch.outputs.sha }}.tar.gz
+
+      - name: Download submodule archives
+        run: |
+          # Generic across any project reusing this workflow: submodules
+          # are discovered from .gitmodules at runtime, not hardcoded here
+          # by name. Projects with no .gitmodules (no vendored submodules)
+          # produce an empty manifest and are otherwise unaffected --
+          # update_package_files.py treats --submodules-manifest as
+          # optional.
+          #
+          # git ls-tree reads each gitlink entry straight from the
+          # superproject's tree at this commit, so the pinned submodule
+          # commit is available without checking out submodule content at
+          # all (no `submodules: recursive` needed on the Checkout step
+          # above).
+          echo "[]" > submodules.json
+
+          if [ -f .gitmodules ]; then
+            while read -r KEY PATH_; do
+              NAME=$(basename "$PATH_")
+              URL=$(git config --file .gitmodules --get "${KEY%.path}.url")
+              REPO=$(echo "$URL" | sed -E 's#^https?://github\.com/##; s#\.git$##')
+
+              SUB_SHA=$(git ls-tree "${{ steps.branch.outputs.sha }}" "$PATH_" | awk '{print $3}')
+              if [ -z "$SUB_SHA" ]; then
+                echo "Could not resolve a submodule commit for $NAME at $PATH_" >&2
+                exit 1
+              fi
+
+              ARCHIVE="$NAME.tar.gz"
+              curl -L -o "$ARCHIVE" "https://github.com/$REPO/archive/$SUB_SHA.tar.gz"
+
+              jq --arg name "$NAME" --arg commit "$SUB_SHA" --arg archive "$ARCHIVE" \
+                '. += [{"name": $name, "commit": $commit, "archive": $archive}]' \
+                submodules.json > submodules.json.tmp
+              mv submodules.json.tmp submodules.json
+
+              echo "$NAME -> $SUB_SHA"
+            done < <(git config --file .gitmodules --get-regexp '\.path$')
+          fi
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -96,10 +136,11 @@ jobs:
         run: |
           python scripts/update_package_files.py \
             --package ${{ env.PACKAGE_NAME }} \
-            --repo ${{ env.REPOSITORY }} \
+            --repo ${{ env.DNS_REPOSITORY }} \
             --version ${{ steps.tag.outputs.version }} \
             --commit ${{ steps.branch.outputs.sha }} \
             --archive source.tar.gz \
+            --submodules-manifest submodules.json \
             --root-dir "$ROOT_DIR" \
             --conan-dir "$CONAN_RECIPE_DIR" \
             --vcpkg-dir "$VCPKG_PORT_DIR"

@@ -157,7 +157,20 @@ inline Baseline parseBaseline(const fs::path& path) {
     return baseline;
 }
 
-// Returns the path to the newest baseline snapshot in benchmarks/baselines.
+// True if a baselines-directory filename belongs to this tool -- i.e.
+// it's a "v"/"V"-prefixed custom-suite snapshot, not one of the
+// google_regressions tool's "gv"/"GV"-prefixed snapshots sitting in
+// the same directory (different, incompatible JSON schema). A "gv..."
+// filename's first character is 'g', so it's excluded by this check
+// without needing special-casing.
+inline bool isCustomBaselineName(const fs::path& path) {
+    std::string stem = path.stem().string();
+    return !stem.empty() && (stem.front() == 'v' || stem.front() == 'V');
+}
+
+// Returns the path to the newest baseline snapshot in
+// benchmarks/baselines, considering only this tool's "v"-prefixed
+// snapshots.
 inline std::string latestBaseline() {
     bool found = false;
     Baseline latest;
@@ -165,6 +178,9 @@ inline std::string latestBaseline() {
 
     for (const auto& entry : fs::directory_iterator("benchmarks/baselines")) {
         if (!entry.is_regular_file() || entry.path().extension() != ".json")
+            continue;
+
+        if (!isCustomBaselineName(entry.path()))
             continue;
 
         Baseline current = parseBaseline(entry.path());

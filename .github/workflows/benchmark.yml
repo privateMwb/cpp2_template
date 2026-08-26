@@ -28,6 +28,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Install dependencies
         run: |
@@ -59,22 +61,46 @@ jobs:
             -DBUILD_REGRESSION=ON \
             -DBUILD_EXAMPLES=OFF
 
-      - name: Build benchmarks
+      - name: Build custom benchmarks
         run: cmake --build build --target benchmarks
 
       - name: Ensure results directory exists
         run: mkdir -p benchmarks/results
 
-      - name: Run benchmarks
+      - name: Run custom benchmarks
         continue-on-error: true
         run: ./build/benchmarks
 
+      - name: Build google benchmarks
+        run: cmake --build build --target google_benchmarks
+
+      - name: Run google benchmarks
+        continue-on-error: true
+        run: ./build/google_benchmarks --benchmark_out=benchmarks/results/google_benchmark_results.json --benchmark_out_format=json
+
+      - name: Convert google benchmarks result to md
+        continue-on-error: true
+        run: |
+          python3 > benchmarks/results/google_benchmark_results.md <<'PY'
+          import json
+          with open('benchmarks/results/google_benchmark_results.json') as f:
+              data = json.load(f)
+          print('| Benchmark | Time | CPU | Iterations |')
+          print('|---|---|---|---|')
+          for b in data['benchmarks']:
+              print(f"| {b['name']} | {b['real_time']:.2f} {b['time_unit']} | {b['cpu_time']:.2f} {b['time_unit']} | {b['iterations']} |")
+          PY
+ 
       - name: Build regression tool
         run: cmake --build build --target regression
 
       - name: Run regression tool
         continue-on-error: true
         run: ./build/regression
+
+      - name: Run google regression tool
+        continue-on-error: true
+        run: ./build/google_regressions
 
       - name: Determine version
         id: version
@@ -93,12 +119,17 @@ jobs:
           cp benchmarks/results/benchmark_results.json "benchmarks/baselines/${{ steps.version.outputs.version }}.json"
           cp benchmarks/results/benchmark_results.md "benchmarks/baselines/${{ steps.version.outputs.version }}.md"
 
+          cp benchmarks/results/google_benchmark_results.json "benchmarks/baselines/g${{ steps.version.outputs.version }}.json"
+          cp benchmarks/results/google_benchmark_results.md "benchmarks/baselines/g${{ steps.version.outputs.version }}.md"
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           git add \
             "benchmarks/baselines/${{ steps.version.outputs.version }}.json" \
-            "benchmarks/baselines/${{ steps.version.outputs.version }}.md"
+            "benchmarks/baselines/${{ steps.version.outputs.version }}.md" \
+            "benchmarks/baselines/g${{ steps.version.outputs.version }}.json" \
+            "benchmarks/baselines/g${{ steps.version.outputs.version }}.md"
 
           git diff --staged --quiet || git commit -m "benchmarks: add baseline snapshot for ${{ steps.version.outputs.version }}"
           git push origin HEAD:main
@@ -114,6 +145,18 @@ jobs:
         with:
           name: benchmark-results-md
           path: benchmarks/results/benchmark_results.md
+
+      - name: Upload google benchmark JSON results
+        uses: actions/upload-artifact@v4
+        with:
+          name: google-benchmark-results-json
+          path: benchmarks/results/google_benchmark_results.json
+
+      - name: Upload google benchmark markdown results
+        uses: actions/upload-artifact@v4
+        with:
+          name: google-benchmark-results-md
+          path: benchmarks/results/google_benchmark_results.md
 
       - name: Upload regression JSON results
         uses: actions/upload-artifact@v4

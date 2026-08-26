@@ -17,6 +17,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Install dependencies
         run: |
@@ -64,9 +66,9 @@ jobs:
             --output-file coverage.info \
             --ignore-errors negative,gcov,mismatch
 
-          lcov --remove coverage.info \
-            '/usr/*' \
-            '*/tests/*' \
+          lcov --extract coverage.info \
+            '*/include/ProjName/*' \
+            '*/src/ProjName/*' \
             --output-file coverage.filtered.info
 
       - name: Generate HTML report

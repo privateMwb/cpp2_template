@@ -5,9 +5,9 @@ from pathlib import Path
 # Project configuration
 # ============================================================
 
-lowcap = "name"
-highcap = "Name"
-RepoName = "REPO"
+lowcap = "projname"
+highcap = "ProjName"
+RepoName = "cpp2_template"
 
 
 # ============================================================
@@ -51,9 +51,9 @@ FILENAMES = {
 # ============================================================
 
 REPLACEMENTS = {
-    "name": lowcap,
-    "Name": highcap,
-    "REPO": RepoName,
+    "projname": lowcap,
+    "ProjName": highcap,
+    "cpp2_template": RepoName,
 }
 
 
@@ -130,7 +130,7 @@ def rename_directories() -> None:
 # ============================================================
 
 def rename_config() -> None:
-    for path in ROOT.rglob("NameConfig.cmake.in"):
+    for path in ROOT.rglob("ProjNameConfig.cmake.in"):
         new_path = path.with_name(
             f"{highcap}Config.cmake.in"
         )

@@ -6,9 +6,6 @@
 // export.
 
 // clang-format off
-// Include the library under test here, e.g.:
-//   #include <your_library/your_library.h>
-
 #include "helpers.h"            // benchmark/baseline data types, snapshot loading, comparison output
 #include "export.h"             // exportJson(), exportMarkdown()
 // clang-format on
@@ -25,7 +22,7 @@
 // markdown report's title. Called once at startup, before the tool
 // runs.
 inline void setProjectLabels() {
-    setCustom("PROJECT_NAME");  // TODO: replace with the library's display name
+    setCustom("PROJECT_NAME"); // TODO: replace with the library's display name
 }
 
 // Iterates baseline results, printing/recording a comparison row against
@@ -56,12 +53,19 @@ inline void printRegression(const std::vector<BenchmarkResult>& baseline,
     }
 }
 
-// Prints every available baseline snapshot's name, sorted oldest to newest.
+// Prints every available baseline snapshot's name, sorted oldest to
+// newest. Only considers this tool's "v"-prefixed snapshots -- the
+// google_regressions tool's "gv"-prefixed snapshots live in the same
+// directory but use an incompatible JSON schema, so they're skipped
+// rather than parsed.
 inline void printList() {
     std::vector<Baseline> baselines;
 
     for (const auto& entry : fs::directory_iterator("benchmarks/baselines")) {
         if (!entry.is_regular_file() || entry.path().extension() != ".json")
+            continue;
+
+        if (!isCustomBaselineName(entry.path()))
             continue;
 
         baselines.push_back(parseBaseline(entry.path()));

@@ -21,6 +21,7 @@ on:
     paths:
       - "packaging/recipes/**"
       - "packaging/vcpkg/ports/**"
+      - "packaging/vcpkg/vcpkg-configuration.json"
       - "packaging/vcpkg-smoke-test/**"
       - "CMakeLists.txt"
       - "conandata.yml"
@@ -72,7 +73,7 @@ jobs:
 
       - name: conan create (builds package + runs test_package)
         run: |
-          conan create packaging/recipes/name/all --version ${{ steps.version.outputs.version }} \
+          conan create packaging/recipes/projname/all --version ${{ steps.version.outputs.version }} \
             -s compiler.cppstd=23 --build=missing
 
   # ------------------------------------------------------------
