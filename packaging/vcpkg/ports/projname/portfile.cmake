@@ -36,12 +36,10 @@ vcpkg_from_github(
 #
 # GitHub source archives do not contain git submodule contents.
 #
-# This template currently has no submodules, so this list is empty.
-# Add:
+# This template currently has no submodules.
+# Add entries here when the project gains submodules:
 #
 # "RepoName|commit-sha|sha512"
-#
-# when the project actually gains a submodule.
 # ---------------------------------------------------------------------
 
 set(SUBMODULE_SPECS
@@ -100,47 +98,28 @@ vcpkg_cmake_install()
 # CMake package configuration
 # ---------------------------------------------------------------------
 #
-# The template can produce either:
+# Upstream installs:
 #
-#   1. STATIC library
-#   2. INTERFACE/header-only library
+#   lib/cmake/ProjName/
+#   debug/lib/cmake/ProjName/
 #
-# vcpkg_cmake_config_fixup() expects a debug configuration tree.
-# For an empty/header-only template there may be no debug config.
+# vcpkg requires:
 #
-# Only perform the fixup when the debug configuration actually exists.
+#   share/projname/
+#
+# vcpkg_cmake_config_fixup() merges the Debug/Release configuration
+# files and moves them to the correct vcpkg location.
 # ---------------------------------------------------------------------
 
-set(DEBUG_CMAKE_CONFIG_PATH
-    "${CURRENT_PACKAGES_DIR}/debug/lib/cmake/${CMAKE_PROJECT_NAME}"
+vcpkg_cmake_config_fixup(
+    PACKAGE_NAME ${CMAKE_PROJECT_NAME}
+    CONFIG_PATH lib/cmake/${CMAKE_PROJECT_NAME}
 )
-
-if(EXISTS "${DEBUG_CMAKE_CONFIG_PATH}")
-
-    message(STATUS
-        "Debug CMake configuration found; "
-        "running vcpkg_cmake_config_fixup()."
-    )
-
-    vcpkg_cmake_config_fixup(
-        PACKAGE_NAME ${CMAKE_PROJECT_NAME}
-        CONFIG_PATH lib/cmake/${CMAKE_PROJECT_NAME}
-    )
-
-else()
-
-    message(STATUS
-        "No debug CMake configuration found; "
-        "skipping vcpkg_cmake_config_fixup()."
-    )
-
-endif()
 
 # ---------------------------------------------------------------------
 # Headers
 # ---------------------------------------------------------------------
 
-# Debug builds do not need another copy of the headers.
 file(
     REMOVE_RECURSE
     "${CURRENT_PACKAGES_DIR}/debug/include"
