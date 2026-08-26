@@ -23,7 +23,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # libs/internal/ is populated via git submodules -- without
           # this, CodeQL only ever sees the root repo's own sources
