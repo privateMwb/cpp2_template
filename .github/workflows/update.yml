@@ -10,6 +10,7 @@ on:
   push:
     tags:
       - "v*"
+
   workflow_dispatch:
     inputs:
       tag:
@@ -25,12 +26,17 @@ jobs:
 
     env:
       PACKAGE_NAME: projname
-      DNS_REPOSITORY: privateMwb/cpp2_template
+      PACKAGE_REPOSITORY: privateMwb/cpp2_template
       ROOT_DIR: .
       CONAN_RECIPE_DIR: packaging/recipes/projname/all
       VCPKG_PORT_DIR: packaging/vcpkg/ports/projname
 
     steps:
+
+      # ----------------------------------------------------------
+      # Resolve tag and version
+      # ----------------------------------------------------------
+
       - name: Resolve tag
         id: tag
         run: |
@@ -39,8 +45,24 @@ jobs:
           else
             TAG="${GITHUB_REF_NAME}"
           fi
+
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid tag: $TAG"
+            echo "Expected format: vMAJOR.MINOR.PATCH"
+            exit 1
+          fi
+
+          VERSION="${TAG#v}"
+
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+          echo "Tag: $TAG"
+          echo "Version: $VERSION"
+
+      # ----------------------------------------------------------
+      # Checkout repository
+      # ----------------------------------------------------------
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -48,12 +70,24 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event.repository.default_branch }}
 
+      # ----------------------------------------------------------
+      # Determine the source branch and commit
+      # ----------------------------------------------------------
+
       - name: Determine source branch
         id: branch
         run: |
           SHA=$(git rev-list -n 1 "${{ steps.tag.outputs.tag }}")
+
+          if [ -z "$SHA" ]; then
+            echo "Could not resolve tag commit."
+            exit 1
+          fi
+
           CANDIDATES=$(git branch -r --contains "$SHA" \
-            | grep -v ' -> ' | grep -v 'HEAD' | sed 's#^ *origin/##')
+            | grep -v ' -> ' \
+            | grep -v 'HEAD' \
+            | sed 's#^ *origin/##')
 
           if [ -z "$CANDIDATES" ]; then
             echo "No remote branch contains $SHA" >&2
@@ -70,80 +104,71 @@ jobs:
 
           echo "Candidates: $(echo "$CANDIDATES" | tr '\n' ' ')"
           echo "Source branch: $BRANCH"
+          echo "Source commit: $SHA"
+
           echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
 
+      # ----------------------------------------------------------
+      # Download source archive
+      # ----------------------------------------------------------
+
       - name: Download source archive
         run: |
-          # Fetch by resolved commit SHA, not the tag string. portfile.cmake
-          # pins REF to a raw commit SHA, and vcpkg_from_github downloads
-          # archive/<REF>.tar.gz -- GitHub embeds the ref string into the
-          # tarball's top-level folder name, so a tag-based archive
-          # (archive/refs/tags/vX.tar.gz) has different bytes, and a
-          # different hash, than the commit-based archive vcpkg actually
-          # fetches. Downloading the same URL here keeps the SHA512 we
-          # compute valid.
-          curl -L \
-            -o source.tar.gz \
-            https://github.com/${{ env.DNS_REPOSITORY }}/archive/${{ steps.branch.outputs.sha }}.tar.gz
-
-      - name: Download submodule archives
-        run: |
-          # Generic across any project reusing this workflow: submodules
-          # are discovered from .gitmodules at runtime, not hardcoded here
-          # by name. Projects with no .gitmodules (no vendored submodules)
-          # produce an empty manifest and are otherwise unaffected --
-          # update_package_files.py treats --submodules-manifest as
-          # optional.
+          # Download the archive using the exact commit SHA that will
+          # be pinned by vcpkg.
           #
-          # git ls-tree reads each gitlink entry straight from the
-          # superproject's tree at this commit, so the pinned submodule
-          # commit is available without checking out submodule content at
-          # all (no `submodules: recursive` needed on the Checkout step
-          # above).
-          echo "[]" > submodules.json
+          # This is important because:
+          #
+          #   archive/<commit>.tar.gz
+          #
+          # produces different archive bytes from:
+          #
+          #   archive/refs/tags/<tag>.tar.gz
+          #
+          # Therefore the SHA512 calculated here must correspond to
+          # the exact archive that vcpkg will download.
 
-          if [ -f .gitmodules ]; then
-            while read -r KEY PATH_; do
-              NAME=$(basename "$PATH_")
-              URL=$(git config --file .gitmodules --get "${KEY%.path}.url")
-              REPO=$(echo "$URL" | sed -E 's#^https?://github\.com/##; s#\.git$##')
+          curl -fL \
+            -o source.tar.gz \
+            "https://github.com/${{ env.PACKAGE_REPOSITORY }}/archive/${{ steps.branch.outputs.sha }}.tar.gz"
 
-              SUB_SHA=$(git ls-tree "${{ steps.branch.outputs.sha }}" "$PATH_" | awk '{print $3}')
-              if [ -z "$SUB_SHA" ]; then
-                echo "Could not resolve a submodule commit for $NAME at $PATH_" >&2
-                exit 1
-              fi
-
-              ARCHIVE="$NAME.tar.gz"
-              curl -L -o "$ARCHIVE" "https://github.com/$REPO/archive/$SUB_SHA.tar.gz"
-
-              jq --arg name "$NAME" --arg commit "$SUB_SHA" --arg archive "$ARCHIVE" \
-                '. += [{"name": $name, "commit": $commit, "archive": $archive}]' \
-                submodules.json > submodules.json.tmp
-              mv submodules.json.tmp submodules.json
-
-              echo "$NAME -> $SUB_SHA"
-            done < <(git config --file .gitmodules --get-regexp '\.path$')
+          if [ ! -s source.tar.gz ]; then
+            echo "Failed to download source archive."
+            exit 1
           fi
+
+          echo "Source archive downloaded:"
+          ls -lh source.tar.gz
+
+      # ----------------------------------------------------------
+      # Setup Python
+      # ----------------------------------------------------------
 
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.x"
 
+      # ----------------------------------------------------------
+      # Update package files
+      # ----------------------------------------------------------
+
       - name: Update package files
         run: |
           python scripts/update_package_files.py \
-            --package ${{ env.PACKAGE_NAME }} \
-            --repo ${{ env.DNS_REPOSITORY }} \
-            --version ${{ steps.tag.outputs.version }} \
-            --commit ${{ steps.branch.outputs.sha }} \
+            --package "$PACKAGE_NAME" \
+            --repo "$PACKAGE_REPOSITORY" \
+            --version "${{ steps.tag.outputs.version }}" \
+            --commit "${{ steps.branch.outputs.sha }}" \
             --archive source.tar.gz \
-            --submodules-manifest submodules.json \
             --root-dir "$ROOT_DIR" \
             --conan-dir "$CONAN_RECIPE_DIR" \
             --vcpkg-dir "$VCPKG_PORT_DIR"
+
+      # ----------------------------------------------------------
+      # Commit generated changes
+      # ----------------------------------------------------------
 
       - name: Commit changes
         run: |
@@ -162,5 +187,9 @@ jobs:
             exit 0
           fi
 
-          git commit -m "Update package recipes for ${{ steps.tag.outputs.tag }}"
-          git push origin HEAD:${{ steps.branch.outputs.branch }}
+          git commit \
+            -m "Update package recipes for ${{ steps.tag.outputs.tag }}"
+
+          git push \
+            origin \
+            "HEAD:${{ steps.branch.outputs.branch }}"
